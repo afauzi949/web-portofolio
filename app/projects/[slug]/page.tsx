@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Github } from "lucide-react"
+import { ArrowLeft, ExternalLink, Github, Linkedin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -62,10 +62,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 </a>
               </Button>
             )}
-            <Button asChild variant="outline" className="border-3 border-black rounded-xl px-6 py-6 h-auto">
-              <a href="https://github.com/afauzi949" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-5 h-5 mr-2" />
-                More Projects
+            <Button asChild className="bg-[#0A66C2] text-white hover:bg-[#004182] rounded-xl px-6 py-6 h-auto">
+              <a href="https://www.linkedin.com/in/achmad-al-fauzi-dhiaulhaq/details/projects/" target="_blank" rel="noopener noreferrer">
+                <Linkedin className="w-5 h-5 mr-2" />
+                View All Projects
               </a>
             </Button>
           </div>
@@ -211,14 +211,24 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               <ArrowLeft className="w-5 h-5" />
               Back to Portfolio
             </Link>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <a
                 href="https://github.com/afauzi949"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2"
               >
-                View All Projects
+                <Github className="w-5 h-5" />
+                GitHub
+              </a>
+              <a
+                href="https://www.linkedin.com/in/achmad-al-fauzi-dhiaulhaq/details/projects/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#0A66C2] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#004182] transition-colors flex items-center gap-2"
+              >
+                <Linkedin className="w-5 h-5" />
+                More Projects
               </a>
             </div>
           </div>

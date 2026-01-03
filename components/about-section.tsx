@@ -48,9 +48,11 @@ export function AboutSection() {
             </div>
           </div>
 
-          <Button className="bg-[#0B0B0B] text-white hover:bg-black/90 rounded-lg py-5 px-8 md:py-[22px] md:px-[62px] text-base md:text-lg font-semibold h-auto w-full sm:w-auto sm:min-w-[240px]">
-            <User className="w-5 h-5" />
-            More about me
+          <Button asChild className="bg-[#0B0B0B] text-white hover:bg-black/90 rounded-lg py-5 px-8 md:py-[22px] md:px-[62px] text-base md:text-lg font-semibold h-auto w-full sm:w-auto sm:min-w-[240px]">
+            <a href="https://linkedin.com/in/achmad-al-fauzi-dhiaulhaq/" target="_blank" rel="noopener noreferrer">
+              <User className="w-5 h-5" />
+              More about me
+            </a>
           </Button>
         </div>
       </div>

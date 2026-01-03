@@ -10,7 +10,7 @@ export function ExperienceSection() {
       company: "NSHC Security",
       description:
         "Engaged in hands-on labs, real-world attack simulations, and professional mentoring with Korean cybersecurity specialists. Completed intensive malware analysis training covering reverse engineering and dynamic analysis.",
-      icon: "/security-shield-icon.png",
+      icon: "/nshc.jpg",
     },
     {
       period: "Dec 2024 - Feb 2025",
@@ -18,7 +18,7 @@ export function ExperienceSection() {
       company: "DISKOMINFO Yogyakarta - KamiSandi",
       description:
         "Supported incident response operations including threat investigation, log analysis, and mitigation. Built internal security automation tools and implemented password strength enforcement.",
-      icon: "/government-shield-icon.jpg",
+      icon: "/csirt-diy.jpg",
     },
     {
       period: "Feb 2024 - Jun 2024",
@@ -26,7 +26,7 @@ export function ExperienceSection() {
       company: "Samsung Innovation Campus Batch 5",
       description:
         "Completed 4-month intensive training in AI & IoT with hands-on experience in sensor integration, device programming, and data communication. Delivered a functional IoT solution through capstone project.",
-      icon: "/samsung-logo.png",
+      icon: "/samsung.jpg",
     },
     {
       period: "Jun 2021 - Aug 2021",
@@ -34,7 +34,7 @@ export function ExperienceSection() {
       company: "PT. Selaras Citra Terabit",
       description:
         "Performed network equipment installation and configuration including routers, switches, and access points. Assisted in troubleshooting network connectivity issues and maintaining network integrity.",
-      icon: "/network-icon.png",
+      icon: "/terabit.jpg",
     },
   ]
 
