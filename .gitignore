@@ -103,6 +103,30 @@ coverage/
 .turbo
 
 # ===================
+# Python
+# ===================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+*.egg
+.mypy_cache/
+.pytest_cache/
+
+# ===================
+# Docker
+# ===================
+docker-compose.override.yml
+
+# ===================
+# Uploads (stored in Docker volume)
+# ===================
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ===================
 # Optional: Local files
 # ===================
 assets/

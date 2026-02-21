@@ -1,0 +1,126 @@
+services:
+  # ============================================
+  # Frontend - Next.js
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: portfolio-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - portfolio-network
+    restart: unless-stopped
+
+  # ============================================
+  # Backend - FastAPI
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: portfolio-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://portfolio_user:portfolio_pass@postgres:5432/portfolio_db}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-secret-key-in-production}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-60}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - portfolio-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # Database - PostgreSQL (internal only)
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: portfolio-postgres
+    # NOTE: No port mapping — DB hanya bisa diakses via internal network
+    # Untuk admin access, gunakan: docker exec -it portfolio-postgres psql -U portfolio_user -d portfolio_db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-portfolio_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-portfolio_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-portfolio_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - portfolio-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-portfolio_user} -d ${POSTGRES_DB:-portfolio_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============================================
+  # Fase 2 (uncomment saat dibutuhkan):
+  # ============================================
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   container_name: portfolio-n8n
+  #   ports:
+  #     - "5678:5678"
+  #   environment:
+  #     - N8N_BASIC_AUTH_ACTIVE=true
+  #     - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+  #     - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-admin123}
+  #     - WEBHOOK_URL=http://n8n:5678
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #   networks:
+  #     - portfolio-network
+  #   restart: unless-stopped
+  #
+  # qdrant:
+  #   image: qdrant/qdrant:latest
+  #   container_name: portfolio-qdrant
+  #   # No port mapping — internal only, accessed by n8n/backend
+  #   volumes:
+  #     - qdrant_data:/qdrant/storage
+  #   networks:
+  #     - portfolio-network
+  #   restart: unless-stopped
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+  # n8n_data:
+  #   driver: local
+  # qdrant_data:
+  #   driver: local
+
+# ============================================
+# Network
+# ============================================
+networks:
+  portfolio-network:
+    driver: bridge
+    name: portfolio-network
