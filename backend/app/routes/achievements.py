@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.database import get_db
 from app.auth import get_current_user
 from app.models.achievement import Achievement
 from app.schemas.achievement import AchievementCreate, AchievementUpdate, AchievementResponse
+from app.services.rag_indexer import sync_single_record, delete_record_from_qdrant
 
 router = APIRouter(prefix="/api/achievements", tags=["Achievements"])
 
@@ -50,6 +51,7 @@ async def get_achievement(achievement_id: UUID, db: AsyncSession = Depends(get_d
 @router.post("", response_model=AchievementResponse, status_code=status.HTTP_201_CREATED)
 async def create_achievement(
     data: AchievementCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -58,6 +60,7 @@ async def create_achievement(
     db.add(achievement)
     await db.commit()
     await db.refresh(achievement)
+    background_tasks.add_task(sync_single_record, achievement, "achievements")
     return achievement
 
 
@@ -65,6 +68,7 @@ async def create_achievement(
 async def update_achievement(
     achievement_id: UUID,
     data: AchievementUpdate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -81,12 +85,14 @@ async def update_achievement(
     achievement.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(achievement)
+    background_tasks.add_task(sync_single_record, achievement, "achievements")
     return achievement
 
 
 @router.delete("/{achievement_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_achievement(
     achievement_id: UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -98,3 +104,4 @@ async def delete_achievement(
 
     await db.delete(achievement)
     await db.commit()
+    background_tasks.add_task(delete_record_from_qdrant, "achievements", str(achievement_id))

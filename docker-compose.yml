@@ -36,10 +36,17 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      - EMBEDDING_URL=${EMBEDDING_URL:-http://localhost:8888}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-}
+      - QDRANT_HOST=${QDRANT_HOST:-qdrant}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-portfolio_rag_v1_bge_768_cosine}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
       postgres:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
     networks:
       - portfolio-network
@@ -65,6 +72,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-portfolio_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - portfolio-network
     restart: unless-stopped
@@ -76,7 +85,27 @@ services:
       start_period: 30s
 
   # ============================================
-  # Fase 2 (uncomment saat dibutuhkan):
+  # Vector Database — Qdrant
+  # ============================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: portfolio-qdrant
+    ports:
+      - "127.0.0.1:6333:6333"   # dev only, localhost-restricted
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - portfolio-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/localhost/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ============================================
+  # Fase berikutnya (uncomment saat dibutuhkan):
   # ============================================
   # n8n:
   #   image: n8nio/n8n:latest
@@ -93,16 +122,6 @@ services:
   #   networks:
   #     - portfolio-network
   #   restart: unless-stopped
-  #
-  # qdrant:
-  #   image: qdrant/qdrant:latest
-  #   container_name: portfolio-qdrant
-  #   # No port mapping — internal only, accessed by n8n/backend
-  #   volumes:
-  #     - qdrant_data:/qdrant/storage
-  #   networks:
-  #     - portfolio-network
-  #   restart: unless-stopped
 
 # ============================================
 # Volumes
@@ -112,9 +131,9 @@ volumes:
     driver: local
   uploads_data:
     driver: local
+  qdrant_data:
+    driver: local
   # n8n_data:
-  #   driver: local
-  # qdrant_data:
   #   driver: local
 
 # ============================================

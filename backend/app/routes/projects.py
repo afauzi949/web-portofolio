@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.database import get_db
 from app.auth import get_current_user
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.services.rag_indexer import sync_single_record, delete_record_from_qdrant
 
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
@@ -59,6 +60,7 @@ async def get_project(slug: str, db: AsyncSession = Depends(get_db)):
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     data: ProjectCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -75,6 +77,7 @@ async def create_project(
     db.add(project)
     await db.commit()
     await db.refresh(project)
+    background_tasks.add_task(sync_single_record, project, "projects")
     return project
 
 
@@ -82,6 +85,7 @@ async def create_project(
 async def update_project(
     project_id: UUID,
     data: ProjectUpdate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -107,12 +111,14 @@ async def update_project(
     project.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(project)
+    background_tasks.add_task(sync_single_record, project, "projects")
     return project
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -124,3 +130,4 @@ async def delete_project(
 
     await db.delete(project)
     await db.commit()
+    background_tasks.add_task(delete_record_from_qdrant, "projects", str(project_id))

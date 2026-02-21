@@ -11,6 +11,7 @@ from app.routes import (
     experiences_router,
     achievements_router,
     upload_router,
+    rag_router,
 )
 
 settings = get_settings()
@@ -22,6 +23,15 @@ async def lifespan(app: FastAPI):
     # Startup
     import os
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
+    # Ensure Qdrant collection exists
+    try:
+        from app.services.qdrant_service import ensure_collection
+        ensure_collection()
+        print("✅ Qdrant collection ready")
+    except Exception as e:
+        print(f"⚠️  Qdrant init skipped: {e}")
+
     print("✅ Portfolio Backend API started")
     yield
     # Shutdown
@@ -61,6 +71,7 @@ app.include_router(projects_router)
 app.include_router(experiences_router)
 app.include_router(achievements_router)
 app.include_router(upload_router)
+app.include_router(rag_router)
 
 
 @app.get("/api/health", tags=["Health"])

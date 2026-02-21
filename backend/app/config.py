@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
     ALLOWED_EXTENSIONS: set[str] = {"jpg", "jpeg", "png", "webp", "gif"}
 
+    # Qdrant
+    QDRANT_HOST: str = "qdrant"
+    QDRANT_PORT: int = 6333
+    QDRANT_COLLECTION: str = "portfolio_rag_v1_bge_768_cosine"
+
+    # Remote Embedding API (VPS)
+    EMBEDDING_URL: str = "http://localhost:8888"
+    EMBEDDING_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True

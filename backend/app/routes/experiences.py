@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.database import get_db
 from app.auth import get_current_user
 from app.models.experience import Experience
 from app.schemas.experience import ExperienceCreate, ExperienceUpdate, ExperienceResponse
+from app.services.rag_indexer import sync_single_record, delete_record_from_qdrant
 
 router = APIRouter(prefix="/api/experiences", tags=["Experiences"])
 
@@ -50,6 +51,7 @@ async def get_experience(experience_id: UUID, db: AsyncSession = Depends(get_db)
 @router.post("", response_model=ExperienceResponse, status_code=status.HTTP_201_CREATED)
 async def create_experience(
     data: ExperienceCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -58,6 +60,7 @@ async def create_experience(
     db.add(experience)
     await db.commit()
     await db.refresh(experience)
+    background_tasks.add_task(sync_single_record, experience, "experiences")
     return experience
 
 
@@ -65,6 +68,7 @@ async def create_experience(
 async def update_experience(
     experience_id: UUID,
     data: ExperienceUpdate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -81,12 +85,14 @@ async def update_experience(
     experience.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(experience)
+    background_tasks.add_task(sync_single_record, experience, "experiences")
     return experience
 
 
 @router.delete("/{experience_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_experience(
     experience_id: UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     _current_user: dict = Depends(get_current_user),
 ):
@@ -98,3 +104,4 @@ async def delete_experience(
 
     await db.delete(experience)
     await db.commit()
+    background_tasks.add_task(delete_record_from_qdrant, "experiences", str(experience_id))
