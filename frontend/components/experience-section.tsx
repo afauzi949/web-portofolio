@@ -1,42 +1,76 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { fetchExperiences, API_URL } from "@/lib/api"
+
+interface Experience {
+  period: string
+  title: string
+  company: string
+  description: string
+  icon: string
+}
+
+const staticExperiences: Experience[] = [
+  {
+    period: "Jul 2025 - Nov 2025",
+    title: "Security Manpower Training Program 2025",
+    company: "NSHC Security",
+    description:
+      "Engaged in hands-on labs, real-world attack simulations, and professional mentoring with Korean cybersecurity specialists. Completed intensive malware analysis training covering reverse engineering and dynamic analysis.",
+    icon: "/nshc.jpg",
+  },
+  {
+    period: "Dec 2024 - Feb 2025",
+    title: "Cyber Defense Incident Responder Intern",
+    company: "DISKOMINFO Yogyakarta - KamiSandi",
+    description:
+      "Supported incident response operations including threat investigation, log analysis, and mitigation. Built internal security automation tools and implemented password strength enforcement.",
+    icon: "/csirt-diy.jpg",
+  },
+  {
+    period: "Feb 2024 - Jun 2024",
+    title: "AI & IoT Bootcamp",
+    company: "Samsung Innovation Campus Batch 5",
+    description:
+      "Completed 4-month intensive training in AI & IoT with hands-on experience in sensor integration, device programming, and data communication. Delivered a functional IoT solution through capstone project.",
+    icon: "/samsung.jpg",
+  },
+  {
+    period: "Jun 2021 - Aug 2021",
+    title: "Network Engineer Intern",
+    company: "PT. Selaras Citra Terabit",
+    description:
+      "Performed network equipment installation and configuration including routers, switches, and access points. Assisted in troubleshooting network connectivity issues and maintaining network integrity.",
+    icon: "/terabit.jpg",
+  },
+]
 
 export function ExperienceSection() {
-  const experiences = [
-    {
-      period: "Jul 2025 - Nov 2025",
-      title: "Security Manpower Training Program 2025",
-      company: "NSHC Security",
-      description:
-        "Engaged in hands-on labs, real-world attack simulations, and professional mentoring with Korean cybersecurity specialists. Completed intensive malware analysis training covering reverse engineering and dynamic analysis.",
-      icon: "/nshc.jpg",
-    },
-    {
-      period: "Dec 2024 - Feb 2025",
-      title: "Cyber Defense Incident Responder Intern",
-      company: "DISKOMINFO Yogyakarta - KamiSandi",
-      description:
-        "Supported incident response operations including threat investigation, log analysis, and mitigation. Built internal security automation tools and implemented password strength enforcement.",
-      icon: "/csirt-diy.jpg",
-    },
-    {
-      period: "Feb 2024 - Jun 2024",
-      title: "AI & IoT Bootcamp",
-      company: "Samsung Innovation Campus Batch 5",
-      description:
-        "Completed 4-month intensive training in AI & IoT with hands-on experience in sensor integration, device programming, and data communication. Delivered a functional IoT solution through capstone project.",
-      icon: "/samsung.jpg",
-    },
-    {
-      period: "Jun 2021 - Aug 2021",
-      title: "Network Engineer Intern",
-      company: "PT. Selaras Citra Terabit",
-      description:
-        "Performed network equipment installation and configuration including routers, switches, and access points. Assisted in troubleshooting network connectivity issues and maintaining network integrity.",
-      icon: "/terabit.jpg",
-    },
-  ]
+  const [experiences, setExperiences] = useState<Experience[]>(staticExperiences)
+
+  useEffect(() => {
+    fetchExperiences()
+      .then((apiExp: any[]) => {
+        if (apiExp.length > 0) {
+          setExperiences(
+            apiExp.map((e) => ({
+              period: e.period,
+              title: e.title,
+              company: e.company,
+              description: e.description,
+              icon: e.icon
+                ? e.icon.startsWith("/uploads") ? `${API_URL}${e.icon}` : e.icon
+                : "/placeholder.svg",
+            }))
+          )
+        }
+      })
+      .catch(() => { })
+  }, [])
 
   return (
     <section className="bg-black py-16 md:py-24">
@@ -76,6 +110,7 @@ export function ExperienceSection() {
                       width={48}
                       height={48}
                       className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full"
+                      unoptimized
                     />
                   </div>
                 </div>

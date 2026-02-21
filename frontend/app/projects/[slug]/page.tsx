@@ -1,22 +1,103 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import { ArrowLeft, ExternalLink, Github, Linkedin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { projects, getProjectBySlug, getAllProjectSlugs } from "@/lib/projects-data"
+import { getProjectBySlug } from "@/lib/projects-data"
+import { fetchProject, API_URL } from "@/lib/api"
 
-export function generateStaticParams() {
-  return getAllProjectSlugs().map((slug) => ({
-    slug: slug,
-  }))
+interface ProjectData {
+  slug: string
+  title: string
+  description: string
+  tag: string
+  bgColor: string
+  bgColorRaw: string
+  illustration: string
+  technologies: string[]
+  outcome: string
+  github: string
+  fullDescription: string
+  systemArchitecture: string[]
+  keyFeatures: string[]
+  systemFlow: string[]
 }
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const project = getProjectBySlug(slug)
+export default function ProjectPage() {
+  const params = useParams()
+  const slug = params.slug as string
+  const [project, setProject] = useState<ProjectData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Try API first
+    fetchProject(slug)
+      .then((p: any) => {
+        const imgSrc = p.image_path
+          ? p.image_path.startsWith("/uploads") ? `${API_URL}${p.image_path}` : p.image_path
+          : "/placeholder.svg"
+        setProject({
+          slug: p.slug,
+          title: p.title,
+          description: p.description,
+          tag: p.category,
+          bgColor: p.bg_color ? `bg-[${p.bg_color}]` : "bg-[#6366F1]",
+          bgColorRaw: p.bg_color || "#6366F1",
+          illustration: imgSrc,
+          technologies: p.tech_stack || [],
+          outcome: p.highlight || "",
+          github: p.external_link || "",
+          fullDescription: p.full_description || "",
+          systemArchitecture: p.system_architecture || [],
+          keyFeatures: p.key_features || [],
+          systemFlow: p.system_flow || [],
+        })
+      })
+      .catch(() => {
+        // Fallback to static data
+        const staticProject = getProjectBySlug(slug)
+        if (staticProject) {
+          setProject({
+            slug: staticProject.slug,
+            title: staticProject.title,
+            description: staticProject.description,
+            tag: staticProject.tag,
+            bgColor: staticProject.bgColor,
+            bgColorRaw: "",
+            illustration: staticProject.illustration,
+            technologies: staticProject.technologies,
+            outcome: staticProject.outcome,
+            github: staticProject.github || "",
+            fullDescription: staticProject.fullDescription,
+            systemArchitecture: staticProject.systemArchitecture || [],
+            keyFeatures: staticProject.keyFeatures,
+            systemFlow: staticProject.systemFlow || [],
+          })
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [slug])
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+      </main>
+    )
+  }
 
   if (!project) {
-    notFound()
+    return (
+      <main className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+        <h1 className="text-3xl font-bold">Project tidak ditemukan</h1>
+        <Link href="/#portfolio" className="text-[#6366F1] font-semibold hover:underline">
+          ← Kembali ke Portfolio
+        </Link>
+      </main>
+    )
   }
 
   return (
@@ -37,22 +118,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-8 md:py-16">
         <div className="max-w-5xl mx-auto">
-          {/* Tag */}
           <span className="inline-block bg-black text-white text-sm font-semibold px-4 py-2 rounded-full mb-6">
             {project.tag}
           </span>
 
-          {/* Title */}
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
             {project.title}
           </h1>
 
-          {/* Short Description */}
           <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed max-w-4xl">
             {project.description}
           </p>
 
-          {/* Action Buttons */}
           <div className="flex flex-wrap gap-4 mb-12">
             {project.github && (
               <Button asChild className="bg-black text-white hover:bg-gray-900 rounded-xl px-6 py-6 h-auto">
@@ -70,8 +147,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             </Button>
           </div>
 
-          {/* Cover Image */}
-          <div className={`${project.bgColor} relative rounded-3xl border-4 border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]`}>
+          <div
+            className={`${project.bgColor} relative rounded-3xl border-4 border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]`}
+            style={project.bgColorRaw ? { backgroundColor: project.bgColorRaw } : undefined}
+          >
             <div className="aspect-video relative">
               <Image
                 src={project.illustration || "/placeholder.svg"}
@@ -79,6 +158,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 fill
                 className="object-cover"
                 priority
+                unoptimized
               />
             </div>
           </div>
@@ -86,33 +166,37 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       </section>
 
       {/* Technologies */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">Technologies Used</h2>
-          <div className="flex flex-wrap gap-3">
-            {project.technologies.map((tech, index) => (
-              <span
-                key={index}
-                className="bg-gray-100 text-gray-800 text-base font-medium px-5 py-2.5 rounded-full border-2 border-gray-200 hover:border-black transition-colors"
-              >
-                {tech}
-              </span>
-            ))}
+      {project.technologies.length > 0 && (
+        <section className="container mx-auto px-4 py-12">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">Technologies Used</h2>
+            <div className="flex flex-wrap gap-3">
+              {project.technologies.map((tech, index) => (
+                <span
+                  key={index}
+                  className="bg-gray-100 text-gray-800 text-base font-medium px-5 py-2.5 rounded-full border-2 border-gray-200 hover:border-black transition-colors"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Full Description */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-gray-50 border-4 border-black rounded-3xl p-8 md:p-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-6">Project Overview</h2>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              {project.fullDescription}
-            </p>
+      {project.fullDescription && (
+        <section className="container mx-auto px-4 py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-gray-50 border-4 border-black rounded-3xl p-8 md:p-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-6">Project Overview</h2>
+              <p className="text-lg text-gray-700 leading-relaxed">
+                {project.fullDescription}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* System Architecture */}
       {project.systemArchitecture && project.systemArchitecture.length > 0 && (
@@ -139,28 +223,30 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* Key Features */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold mb-8">Key Features</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {project.keyFeatures.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white border-3 border-black rounded-2xl p-6 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-              >
-                <div className="flex gap-4 items-start">
-                  <div className="w-8 h-8 bg-[#22C55E] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
+      {project.keyFeatures && project.keyFeatures.length > 0 && (
+        <section className="container mx-auto px-4 py-12">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8">Key Features</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {project.keyFeatures.map((feature, index) => (
+                <div
+                  key={index}
+                  className="bg-white border-3 border-black rounded-2xl p-6 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <div className="flex gap-4 items-start">
+                    <div className="w-8 h-8 bg-[#22C55E] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">{feature}</p>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{feature}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* System Flow */}
       {project.systemFlow && project.systemFlow.length > 0 && (
@@ -174,7 +260,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     <div className="w-12 h-12 bg-[#2F81F7] rounded-full flex items-center justify-center border-4 border-black">
                       <span className="text-white font-bold">{index + 1}</span>
                     </div>
-                    {index < project.systemFlow!.length - 1 && (
+                    {index < project.systemFlow.length - 1 && (
                       <div className="w-1 h-full bg-black min-h-[40px]"></div>
                     )}
                   </div>
@@ -189,16 +275,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* Outcome */}
-      <section className="container mx-auto px-4 py-12 pb-24">
-        <div className="max-w-5xl mx-auto">
-          <div className={`${project.bgColor} border-4 border-black rounded-3xl p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]`}>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white drop-shadow-md">Project Outcome</h2>
-            <p className="text-xl md:text-2xl font-medium text-white drop-shadow-md leading-relaxed">
-              ✓ {project.outcome}
-            </p>
+      {project.outcome && (
+        <section className="container mx-auto px-4 py-12 pb-24">
+          <div className="max-w-5xl mx-auto">
+            <div
+              className={`${project.bgColor} border-4 border-black rounded-3xl p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]`}
+              style={project.bgColorRaw ? { backgroundColor: project.bgColorRaw } : undefined}
+            >
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white drop-shadow-md">Project Outcome</h2>
+              <p className="text-xl md:text-2xl font-medium text-white drop-shadow-md leading-relaxed">
+                ✓ {project.outcome}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Footer Navigation */}
       <section className="bg-black py-12">
@@ -237,5 +328,3 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     </main>
   )
 }
-
-

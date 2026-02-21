@@ -1,9 +1,73 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { ArrowRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { projects } from "@/lib/projects-data"
+import { projects as staticProjects } from "@/lib/projects-data"
+import { fetchProjects, API_URL } from "@/lib/api"
+
+interface ApiProject {
+  id: string
+  slug: string
+  title: string
+  category: string
+  description: string
+  tech_stack: string[]
+  highlight: string
+  image_path: string
+  external_link: string
+  bg_color: string
+  full_description: string
+  key_features: string[]
+  system_architecture: string[]
+  system_flow: string[]
+}
+
+function mapApiProject(p: ApiProject) {
+  const imgSrc = p.image_path
+    ? p.image_path.startsWith("/uploads") ? `${API_URL}${p.image_path}` : p.image_path
+    : "/placeholder.svg"
+  return {
+    slug: p.slug,
+    title: p.title,
+    tag: p.category,
+    description: p.description,
+    technologies: p.tech_stack || [],
+    outcome: p.highlight || "",
+    bgColor: p.bg_color ? `bg-[${p.bg_color}]` : "bg-[#6366F1]",
+    bgColorRaw: p.bg_color || "#6366F1",
+    illustration: imgSrc,
+  }
+}
 
 export function PortfolioSection() {
+  const [projects, setProjects] = useState(
+    staticProjects.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      tag: p.tag,
+      description: p.description,
+      technologies: p.technologies,
+      outcome: p.outcome,
+      bgColor: p.bgColor,
+      bgColorRaw: "",
+      illustration: p.illustration,
+    }))
+  )
+
+  useEffect(() => {
+    fetchProjects()
+      .then((apiProjects: ApiProject[]) => {
+        if (apiProjects.length > 0) {
+          setProjects(apiProjects.map(mapApiProject))
+        }
+      })
+      .catch(() => {
+        // Fallback to static data (already set)
+      })
+  }, [])
+
   return (
     <section id="portfolio" className="container mx-auto px-4 py-16 md:py-24 scroll-mt-20">
       <div className="max-w-7xl mx-auto">
@@ -64,12 +128,16 @@ export function PortfolioSection() {
                 </span>
               </div>
 
-              <div className={`${project.bgColor} relative overflow-hidden min-h-[250px] md:min-h-[500px]`}>
+              <div
+                className={`${project.bgColor} relative overflow-hidden min-h-[250px] md:min-h-[500px]`}
+                style={project.bgColorRaw ? { backgroundColor: project.bgColorRaw } : undefined}
+              >
                 <Image
                   src={project.illustration || "/placeholder.svg"}
                   alt={project.title}
                   fill
                   className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                  unoptimized
                 />
               </div>
             </Link>

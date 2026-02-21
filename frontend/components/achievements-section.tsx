@@ -1,29 +1,55 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Award, Trophy } from "lucide-react"
+import { fetchAchievements } from "@/lib/api"
+
+interface Achievement {
+  title: string
+  description: string
+  color: string
+}
+
+const staticAchievements: Achievement[] = [
+  {
+    title: "Top 12 Cybersecurity Training in South Korea",
+    description:
+      "Selected as one of the Top 12 performers nationwide to receive an exclusive cybersecurity onsite training opportunity in South Korea with NSHC Security.",
+    color: "bg-[#6366F1]",
+  },
+  {
+    title: "Bronze Certificate - APJC NetAcad Riders 2025",
+    description:
+      "Awarded the Bronze Certificate in the APJC NetAcad Riders 2025 international networking competition hosted by Cisco Networking Academy.",
+    color: "bg-[#2F81F7]",
+  },
+  {
+    title: "Semifinalist - Samsung Innovation Campus 2024",
+    description:
+      "Selected as a semifinalist in the Samsung Innovation Campus 2024 competition among 4,000+ participants nationwide.",
+    color: "bg-[#FFC224]",
+  },
+]
 
 export function AchievementsSection() {
-  const achievements = [
-    {
-      title: "Top 12 Cybersecurity Training in South Korea",
-      description:
-        "Selected as one of the Top 12 performers nationwide to receive an exclusive cybersecurity onsite training opportunity in South Korea with NSHC Security.",
-      icon: Trophy,
-      color: "bg-[#6366F1]",
-    },
-    {
-      title: "Bronze Certificate - APJC NetAcad Riders 2025",
-      description:
-        "Awarded the Bronze Certificate in the APJC NetAcad Riders 2025 international networking competition hosted by Cisco Networking Academy.",
-      icon: Award,
-      color: "bg-[#2F81F7]",
-    },
-    {
-      title: "Semifinalist - Samsung Innovation Campus 2024",
-      description:
-        "Selected as a semifinalist in the Samsung Innovation Campus 2024 competition among 4,000+ participants nationwide.",
-      icon: Award,
-      color: "bg-[#FFC224]",
-    },
-  ]
+  const [achievements, setAchievements] = useState<Achievement[]>(staticAchievements)
+
+  useEffect(() => {
+    fetchAchievements()
+      .then((apiAch: any[]) => {
+        if (apiAch.length > 0) {
+          setAchievements(
+            apiAch.map((a) => ({
+              title: a.title,
+              description: a.description,
+              color: a.color ? `bg-[${a.color}]` : "bg-[#6366F1]",
+              colorRaw: a.color || "#6366F1",
+            }))
+          )
+        }
+      })
+      .catch(() => { })
+  }, [])
 
   return (
     <section className="bg-white py-16 md:py-24">
@@ -41,7 +67,7 @@ export function AchievementsSection() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {achievements.map((achievement, index) => {
-              const Icon = achievement.icon
+              const Icon = index === 0 ? Trophy : Award
               return (
                 <div
                   key={index}
@@ -49,6 +75,7 @@ export function AchievementsSection() {
                 >
                   <div
                     className={`${achievement.color} w-16 h-16 rounded-2xl border-2 border-black flex items-center justify-center mb-6`}
+                    style={(achievement as any).colorRaw ? { backgroundColor: (achievement as any).colorRaw } : undefined}
                   >
                     <Icon className="w-8 h-8 text-white" strokeWidth={2.5} />
                   </div>
