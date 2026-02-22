@@ -111,7 +111,7 @@ services:
     image: n8nio/n8n:latest
     container_name: portfolio-n8n
     ports:
-      - "127.0.0.1:5678:5678"      # localhost-only, akses via SSH tunnel / reverse proxy
+      - "5678:5678"      # localhost-only, akses via SSH tunnel / reverse proxy
     environment:
       - N8N_HOST=${N8N_HOST:-localhost}
       - N8N_PORT=5678
