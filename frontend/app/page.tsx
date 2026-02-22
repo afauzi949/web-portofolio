@@ -7,6 +7,7 @@ import { PortfolioSection } from "@/components/portfolio-section"
 import { ExperienceSection } from "@/components/experience-section"
 import { AchievementsSection } from "@/components/achievements-section"
 import { Footer } from "@/components/footer"
+import { ChatbotWidget } from "@/components/chatbot-widget"
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
       <AchievementsSection />
       <ExperienceSection />
       <Footer />
+      <ChatbotWidget />
     </main>
   )
 }
